@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>QR Code Scanner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            margin: 0;
+            text-align: center;
+            background: #000;
+        }
+        video {
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+        }
+        canvas {
+            display: none;
+        }
+        #tip {
+            position: fixed;
+            bottom: 20px;
+            color: #fff;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<video id="video" autoplay></video>
+<canvas id="canvas"></canvas>
+<div id="tip">Scanning</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+
+<script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" }
+    }).then(stream => {
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true);
+        requestAnimationFrame(scan);
+    });
+
+    function scan() {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+            if (code) {
+                const text = code.data.trim();
+                if (text.startsWith("http://") || text.startsWith("https://")) {
+                    window.location.href = text;
+                    return;
+                } else {
+                    alert("it is not a URL：" + text);
+                }
+            }
+        }
+        requestAnimationFrame(scan);
+    }
+</script>
+
+</body>
+</html>
